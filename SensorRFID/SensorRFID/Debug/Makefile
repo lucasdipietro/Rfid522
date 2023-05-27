@@ -39,6 +39,9 @@ SUBDIRS :=  \
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
+../lib/ds3231.c \
+../lib/extfun.c \
+../lib/i2c.c \
 ../lib/mfrc522.c \
 ../lib/spi.c \
 ../lib/uart.c \
@@ -52,24 +55,36 @@ ASM_SRCS +=
 
 
 OBJS +=  \
+lib/ds3231.o \
+lib/extfun.o \
+lib/i2c.o \
 lib/mfrc522.o \
 lib/spi.o \
 lib/uart.o \
 main.o
 
 OBJS_AS_ARGS +=  \
+lib/ds3231.o \
+lib/extfun.o \
+lib/i2c.o \
 lib/mfrc522.o \
 lib/spi.o \
 lib/uart.o \
 main.o
 
 C_DEPS +=  \
+lib/ds3231.d \
+lib/extfun.d \
+lib/i2c.d \
 lib/mfrc522.d \
 lib/spi.d \
 lib/uart.d \
 main.d
 
 C_DEPS_AS_ARGS +=  \
+lib/ds3231.d \
+lib/extfun.d \
+lib/i2c.d \
 lib/mfrc522.d \
 lib/spi.d \
 lib/uart.d \
@@ -89,6 +104,27 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+lib/ds3231.o: ../lib/ds3231.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../include" -I"../lib"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+lib/extfun.o: ../lib/extfun.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../include" -I"../lib"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+lib/i2c.o: ../lib/i2c.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include" -I"../include" -I"../lib"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
 lib/mfrc522.o: ../lib/mfrc522.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
