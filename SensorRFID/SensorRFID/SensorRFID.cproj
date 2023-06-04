@@ -165,6 +165,9 @@
     <Compile Include="include\spi_config.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="lib\http.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="lib\ds3231.c">
       <SubType>compile</SubType>
     </Compile>

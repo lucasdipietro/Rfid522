@@ -2,6 +2,8 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
+lib\http.c
+
 lib\ds3231.c
 
 lib\extfun.c

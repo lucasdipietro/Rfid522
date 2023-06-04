@@ -8,6 +8,7 @@
 #include <spi.h>
 #include <util/delay.h>
 #include <extfun.h>
+#include <ds3231.h>
 uint8_t byte;
 
 
@@ -51,13 +52,27 @@ uint8_t  rfid_card_found(char str){
 	}
 	
 }
+uint8_t rtc_alive(){
+	if(!(i2c_start (  ) ||
+	i2c_addr ( DS3231_I2C_SLAW_WRITE ))){
+		return 1;
+		} 
+	else
+		{
+			errorhandler(ERROR20);
+			return 0;
+		}
+}
 
 void errorhandler(uint8_t errorcode){
 	if(errorcode == ERROR10){
 		USART_putstring("No sensor detected\r\n");
 	}
 	if(errorcode == ERROR20){
-		USART_putstring("Error reading card");
+		USART_putstring("No RTC conectado");
+	}
+	if(errorcode == ERROR30){
+		USART_putstring("ESP no conectado");
 	}
 	
 }
