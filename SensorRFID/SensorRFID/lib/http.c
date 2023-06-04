@@ -302,7 +302,7 @@ uint16_t Read_Data(char* _buffer)
 	return len;
 }
 
-ISR (USART_RXC_vect)
+ISR (USART_RX_vect)
 {
 	uint8_t oldsrg = SREG;
 	cli();
@@ -312,4 +312,44 @@ ISR (USART_RXC_vect)
 		Counter = 0; pointer = 0;
 	}
 	SREG = oldsrg;
+}
+char* extract_data(const char* packet) {
+	const char* start = strstr(packet, "data") + strlen("data") + 2;
+	const char* end = strstr(packet, "wts") -2 ;
+	
+	int len = end - start;
+	
+	char* data = malloc(len + 1);
+	strncpy(data, start, len);
+	data[len] = '\0';
+	
+	return data;
+}
+void Post_f(char * buff, char * channel, char * resource, char * token, char * data) {
+	char paquete[350]="POST /v1/data/write/";
+	char longi[20]="";
+	strcat(paquete,channel);
+	strcat(paquete,"/");
+	strcat(paquete,resource);
+	strcat(paquete," HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: ");
+	strcat(paquete,token);
+	strcat(paquete,"\r\nContent-length: ");
+	sprintf(longi,"%ld",strlen(data));
+	strcat(paquete,longi);
+	strcat(paquete,"\r\n\r\n{\"data\": ");
+		strcat(paquete,data);
+	strcat(paquete,"}");
+	strcpy(buff,paquete);
+	return;
+}
+void Get_f(char * buff, char * channel, char * resource, char * token){
+	char paquete[350]="GET /v1/data/read/";
+	strcat(paquete,channel);
+	strcat(paquete,"/");
+	strcat(paquete,resource);
+	strcat(paquete,"?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: ");
+	strcat(paquete,token);
+	strcat(paquete,"\r\n\r\n");
+	strcpy(buff,paquete);
+	return;
 }

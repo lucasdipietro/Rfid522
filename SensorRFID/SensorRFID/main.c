@@ -81,7 +81,7 @@ int main()
 	char TIME[TIMER_LEN];
 	char strchr[128];
 	char strc;
-	char * strcp=&strc;
+	char * strcp;
 	struct ds3231_clock_t clock = { 0 };
 	
 	spi_init();
@@ -138,15 +138,10 @@ int main()
 	USART_init(BAUD_PRESCALLER_115200);						/* Inicia la USART a 115200 baudios */
 	//sei();									/* inicia interrupciones globales */
 
-	while(!(ESPXX_Begin())); //ESPXX_BEGIN ES SOLO PARA ENVIAR UN COMANDO at Y COMPROBAR CONEXIÓN CON EL ESP
+	ESPXX_Begin(); //ESPXX_BEGIN ES SOLO PARA ENVIAR UN COMANDO at Y COMPROBAR CONEXIÓN CON EL ESP
 	ESPXX_WIFIMode(3);/* 3 = Both (AP and STA) */
-	bool booleano = ESPXX_ConnectionMode(0);			/* 0 = Single; 1 = Multi */
-	//if(booleano){
-	//PORTB |= (1 << PORTB5);
-	//}
-	//ESPXX_ApplicationMode(NORMAL);		/* 0 = modo Normal; 1 = Transperant Mode */
+	ESPXX_ConnectionMode(0);			/* 0 = Single; 1 = Multi */
 	ESPXX_JoinAccessPoint(SSID, PASSWORD);
-	//ESPXX_Start(0, DOMAIN, PORT);
 
 
 
@@ -161,16 +156,80 @@ int main()
 
 			if(byte == CARD_FOUND)
 			{	
-				
+				//////////////////////////////////////////////////////////////////////////
+				///Aca detecta la tarjeta
 				byte = mfrc522_get_card_serial(str);
 				USART_putstring("CARD DETECTED\r\n");
 				sprintf(strchr,"Card : %x %x %x %x \r\n",str[0],str[1],str[2],str[3]);
 				USART_putstring(strchr);
-				
+				//////////////////////////////////////////////////////////////////////////
 	
+				//////////////////////////////////////////////////////////////////////////
+				///Aca hace el GET a la ID 
+				ESPXX_Start(0, DOMAIN, PORT);
+				memset(_buffer, 0, 350);
+				Get_f(_buffer,"Tarjetas","65_43_GH_5T","token_WlqwfZqzycNiPoZK");
+				ESPXX_Send(_buffer);
+				Read_Data(_buffer); //aca hay q ver q hacemo 
+				bool card_match = strcmp(extract_data(RESPONSE_BUFFER),"true");
+				//////////////////////////////////////////////////////////////////////////
+	
+				if(card_match)
+					//////////////////////////////////////////////////////////////////////////
+					//abre el rele
+					PORTD |= (1 << 7);
+					prenderled = 1;
+					TCNT1 = (65535 - (16000000/1024)*50);
+					//////////////////////////////////////////////////////////////////////////
+					
+					//////////////////////////////////////////////////////////////////////////
+					///GET para saber si esta adentro o afuera 
+					ESPXX_Start(0, DOMAIN, PORT);
+					memset(_buffer, 0, 350);
+					Get_f(_buffer,"Tarjetas","tarjeta_1_bool","token_WlqwfZqzycNiPoZK");
+					ESPXX_Send(_buffer);
+					bool entrando = strcmp(extract_data(RESPONSE_BUFFER),"true");
+					
+					//////////////////////////////////////////////////////////////////////////
+					
+					if(entrando)
+					//////////////////////////////////////////////////////////////////////////
+					///registra el tiempo y lo envia a tiempo de entrada
+					
+					
+					//////////////////////////////////////////////////////////////////////////
+					
+					//////////////////////////////////////////////////////////////////////////
+					/// cambia el valor del bool 
+					
+					
+					//////////////////////////////////////////////////////////////////////////
+					if(esta saliendo)
+					//////////////////////////////////////////////////////////////////////////
+					///registra el tiempo 
+					
+					
+					//////////////////////////////////////////////////////////////////////////
+					
+					//////////////////////////////////////////////////////////////////////////
+					///resta los tiempos 
+					
+					
+					//////////////////////////////////////////////////////////////////////////
+					
+					//////////////////////////////////////////////////////////////////////////
+					///cambia el bool
+					
+					
+					//////////////////////////////////////////////////////////////////////////			
+					
+										
 				ESPXX_Start(0, DOMAIN, PORT);
 				memset(_buffer, 0, 150);
-				sprintf(_buffer, "GET /v1/data/read/test/res?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: token_AoCqH6gCmwvFAnls\r\n\r\n");
+				//sprintf(_buffer, "GET /v1/data/read/test/res?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: token_AoCqH6gCmwvFAnls\r\n\r\n");
+				ds3231_read_clock ( &clock ); // 0 = success
+				sprintf(strchr,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
+				Post_f(_buffer,"Tarjetas","tarjeta_1_salida","token_WlqwfZqzycNiPoZK",strchr);
 				ESPXX_Send(_buffer);
 				Read_Data(_buffer);
 				_delay_ms(600);
