@@ -5,9 +5,11 @@
  *  Author: lucas
  */ 
 
+#include <http.h>
+
 #define SREG    _SFR_IO8(0x3F)
 
-#define DEFAULT_BUFFER_SIZE		160
+//#define DEFAULT_BUFFER_SIZE		160
 #define DEFAULT_TIMEOUT			10000
 
 /* Connection Mode */
@@ -38,6 +40,19 @@
 #define SSID				"Barcala"
 #define PASSWORD			"barcala2023"
 
+#include <uart.h>
+#include <avr/io.h>
+#include <util/delay.h>
+#include <spi.h>
+#include <mfrc522.h>
+#include <stdio.h>
+#include <string.h>
+#include <extfun.h>
+#include <ds3231.h>
+#include <i2c.h>
+#include <interrupt.h>
+#include <stdbool.h>
+
 enum ESP8266_RESPONSE_STATUS{
 	ESP8266_RESPONSE_WAITING,
 	ESP8266_RESPONSE_FINISHED,
@@ -67,7 +82,7 @@ enum ESP8266_JOINAP_STATUS {
 int8_t Response_Status;
 volatile int16_t Counter = 0, pointer = 0;
 uint32_t TimeOut = 0;
-char RESPONSE_BUFFER[DEFAULT_BUFFER_SIZE];
+//char RESPONSE_BUFFER[DEFAULT_BUFFER_SIZE];
 
 void Read_Response(char* _Expected_Response)
 {
@@ -313,19 +328,18 @@ ISR (USART_RX_vect)
 	}
 	SREG = oldsrg;
 }
-char* extract_data(const char* packet) {
+void extract_data(const char* packet, char** extracted_data) {
 	const char* start = strstr(packet, "data") + strlen("data") + 2;
-	const char* end = strstr(packet, "wts") -2 ;
-	
+	const char* end = strstr(packet, "wts") - 2;
+
 	int len = end - start;
-	
-	char* data = malloc(len + 1);
-	strncpy(data, start, len);
-	data[len] = '\0';
-	
-	return data;
+
+	*extracted_data = malloc(len + 1);
+	strncpy(*extracted_data, start, len);
+	(*extracted_data)[len] = '\0';
 }
-void Post_f(char * buff, char * channel, char * resource, char * token, char * data) {
+void Post_f(char * channel, char * resource, char * token, char * data) {
+	ESPXX_Start(0, DOMAIN, PORT);
 	char paquete[350]="POST /v1/data/write/";
 	char longi[20]="";
 	strcat(paquete,channel);
@@ -339,10 +353,11 @@ void Post_f(char * buff, char * channel, char * resource, char * token, char * d
 	strcat(paquete,"\r\n\r\n{\"data\": ");
 		strcat(paquete,data);
 	strcat(paquete,"}");
-	strcpy(buff,paquete);
+	ESPXX_Send(paquete);
 	return;
 }
-void Get_f(char * buff, char * channel, char * resource, char * token){
+void Get_f(char * channel, char * resource, char * token){
+	ESPXX_Start(0, DOMAIN, PORT);
 	char paquete[350]="GET /v1/data/read/";
 	strcat(paquete,channel);
 	strcat(paquete,"/");
@@ -350,6 +365,29 @@ void Get_f(char * buff, char * channel, char * resource, char * token){
 	strcat(paquete,"?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: ");
 	strcat(paquete,token);
 	strcat(paquete,"\r\n\r\n");
-	strcpy(buff,paquete);
+	ESPXX_Send(paquete);
 	return;
 }
+/*
+ds3231_to_str(ds3231_clock_t clock, char * clock_string){
+	sprintf(clock_string, "%d/%d/%d %d:%d:%d", clock.day, clock.month, clock.year, clock.hours, clock.minutes, clock.seconds);
+	return;
+}
+
+ds3231_clock_t time_diff(ds3231_clock_t clock1, char * clock2){
+	struct ds3231_clock_t duration;
+	uint32_t time1 = clock1.hours * 3600 + clock1.minutes * 60 + clock1.seconds;
+	uint32_t clock2_dia, clock2_mes, clock2_anio, clock2_hora, clock2_minuto, clock2_segundo;
+	sscanf(clock2, "%d/%d/%d %d:%d:%d", &clock2_dia, &clock2_mes, &clock2_anio, &clock2_hora, &clock2_minuto, &clock2_segundo);
+	uint32_t time2 = clock2_hora * 3600 + clock2_minuto * 60 + clock2_segundo;
+	int32_t diff = time2 - time1;
+	uint8_t hours = diff / 3600;
+	diff -= hours * 3600;
+	uint8_t minutes = diff / 60;
+	uint8_t seconds = diff % 60;
+	duration.hours = hours;
+	duration.minutes = minutes;
+	duration.seconds = seconds;
+	return duration;
+}
+*/

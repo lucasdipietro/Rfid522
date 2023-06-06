@@ -144,6 +144,9 @@
     <Compile Include="include\i2c.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="include\http.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="include\interrupt.h">
       <SubType>compile</SubType>
     </Compile>
@@ -154,9 +157,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="include\mfrc522_reg.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="include\rtc3231.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="include\spi.h">

@@ -19,7 +19,9 @@
 #include <ds3231.h>
 #include <i2c.h>
 #include <interrupt.h>
-#include <http.c>
+#include <stdbool.h>
+#include <http.h>
+
 #define TIMER_LEN 128
 uint8_t SelfTestBuffer[64];
 uint8_t timerStarted = 0;
@@ -33,7 +35,8 @@ uint8_t prenderled =0;
 #define PASSWORD			"0161833386"
 //#define SSID				"Barcala"
 //#define PASSWORD			"barcala2023"
-
+#define channel "Tarjetas"
+#define token "token_WlqwfZqzycNiPoZK"
 
 
 ISR(PCINT2_vect){
@@ -79,10 +82,15 @@ int main()
 	uint8_t ENTER;
 	char ID[MAX_LEN];
 	char TIME[TIMER_LEN];
-	char strchr[128];
+	char strchrs[128];
+	char clockstr[100];
 	char strc;
 	char * strcp;
+	uint8_t card_match = 0;
 	struct ds3231_clock_t clock = { 0 };
+		char* extracted_data = NULL;
+		uint8_t entrando;
+		uint8_t saliendo;
 	
 	spi_init();
 		_delay_ms(1000);
@@ -159,22 +167,38 @@ int main()
 				//////////////////////////////////////////////////////////////////////////
 				///Aca detecta la tarjeta
 				byte = mfrc522_get_card_serial(str);
-				USART_putstring("CARD DETECTED\r\n");
-				sprintf(strchr,"Card : %x %x %x %x \r\n",str[0],str[1],str[2],str[3]);
-				USART_putstring(strchr);
+				//USART_putstring("CARD DETECTED\r\n");
+				sprintf(strchrs,"%x:%x:%x:%x",str[0],str[1],str[2],str[3]);
+				//USART_putstring(strchr);
 				//////////////////////////////////////////////////////////////////////////
-	
+				ds3231_read_clock ( &clock ); // 0 = success
+				sprintf(clockstr,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
+				
 				//////////////////////////////////////////////////////////////////////////
 				///Aca hace el GET a la ID 
-				ESPXX_Start(0, DOMAIN, PORT);
-				memset(_buffer, 0, 350);
-				Get_f(_buffer,"Tarjetas","65_43_GH_5T","token_WlqwfZqzycNiPoZK");
-				ESPXX_Send(_buffer);
-				Read_Data(_buffer); //aca hay q ver q hacemo 
-				bool card_match = strcmp(extract_data(RESPONSE_BUFFER),"true");
+				Get_f(channel,strchrs,token);
+				//Read_Data(_buffer); //aca hay q ver q hacemo 
+				 extract_data(RESPONSE_BUFFER, &extracted_data);
+				 sprintf(strchrs,"%s",extracted_data);
+				 if(!strcmp(strchrs,"true")){
+					 card_match = 1;
+				 }
 				//////////////////////////////////////////////////////////////////////////
 	
 				if(card_match)
+					if(strcmp(strchrs,"aca va la ide de tarjeta")){
+						#define tarjeta_entrada "tarjeta_1_entrada"
+						#define tarjeta_salida  "tarjeta_1_salida"
+						#define tarjeta_diferencia  "tarjeta_1_diferencia"
+						#define tarjeta_bool  "tarjeta_1_bool"
+					}
+					if(strcmp(strchrs,"aca va la ide de tarjeta")){
+						#define tarjeta_entrada  "tarjeta_2_entrada"
+						#define tarjeta_salida  "tarjeta_2_salida"
+						#define tarjeta_diferencia  "tarjeta_2_diferencia"
+						#define tarjeta_bool  "tarjeta_2_bool"
+					}
+				
 					//////////////////////////////////////////////////////////////////////////
 					//abre el rele
 					PORTD |= (1 << 7);
@@ -184,57 +208,80 @@ int main()
 					
 					//////////////////////////////////////////////////////////////////////////
 					///GET para saber si esta adentro o afuera 
-					ESPXX_Start(0, DOMAIN, PORT);
-					memset(_buffer, 0, 350);
-					Get_f(_buffer,"Tarjetas","tarjeta_1_bool","token_WlqwfZqzycNiPoZK");
-					ESPXX_Send(_buffer);
-					bool entrando = strcmp(extract_data(RESPONSE_BUFFER),"true");
-					
+					Get_f(channel,tarjeta_bool,token);
+					//uint8_t entrando = strcmp(extract_data(RESPONSE_BUFFER),"true");
+					 extract_data(RESPONSE_BUFFER, &extracted_data);
+					sprintf(strchrs,"%s",extracted_data);
+					if(!strcmp(strchrs,"true")){
+						entrando = 1;
+					}
+					//bool saliendo = strcmp(extract_data(RESPONSE_BUFFER),"false");
+					 extract_data(RESPONSE_BUFFER, &extracted_data);
+					 sprintf(strchrs,"%s",extracted_data);
+					 if(!strcmp(strchrs,"false")){
+						 saliendo = 1;
+					 }
 					//////////////////////////////////////////////////////////////////////////
 					
 					if(entrando)
 					//////////////////////////////////////////////////////////////////////////
 					///registra el tiempo y lo envia a tiempo de entrada
-					
-					
+					Get_f(channel,tarjeta_entrada,token);
+					//_buffer = extract_data(RESPONSE_BUFFER);
+					//ACA MOVEMOS EL VECTOR DE TIEMPO
+					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
+					sprintf(strchrs,",%s",clockstr);
+					strcat(_buffer,strchrs);
+					//ACA LO PUSHEAMOS 
+					Post_f(channel,tarjeta_entrada,token,_buffer);
 					//////////////////////////////////////////////////////////////////////////
 					
 					//////////////////////////////////////////////////////////////////////////
 					/// cambia el valor del bool 
-					
+					Post_f(channel,tarjeta_bool,token,"false");
 					
 					//////////////////////////////////////////////////////////////////////////
-					if(esta saliendo)
+					if(saliendo)
 					//////////////////////////////////////////////////////////////////////////
 					///registra el tiempo 
-					
+					Get_f(channel,tarjeta_salida,token);
+					//_buffer = extract_data(RESPONSE_BUFFER);
+					//ACA MOVEMOS EL VECTOR DE TIEMPO
+					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
+					sprintf(strchrs,",%s",clockstr);
+					strcat(_buffer,strchrs);
+					//ACA LO PUSHEAMOS
+					Post_f(channel,tarjeta_salida,token,_buffer);
 					
 					//////////////////////////////////////////////////////////////////////////
 					
 					//////////////////////////////////////////////////////////////////////////
-					///resta los tiempos 
-					
-					
+					///resta los tiempos
+					Get_f(channel,tarjeta_entrada,token);
+					strcpy(_buffer,extract_data(RESPONSE_BUFFER)); 
+					memmove(_buffer,_buffer + (17*4),strlen(_buffer) - (17*4)+1);
+					//ds3231_clock_t duration = time_diff(clock,_buffer);	
+					//sprintf(_buffer,"%d/%d/%d %d:%d:%d",duration.date,duration.month,duration.year,duration.hours,duration.minutes,duration.seconds);
 					//////////////////////////////////////////////////////////////////////////
 					
 					//////////////////////////////////////////////////////////////////////////
 					///cambia el bool
-					
+					Post_f(channel,tarjeta_bool,token,"false");
 					
 					//////////////////////////////////////////////////////////////////////////			
 					
-										
+								/*		
 				ESPXX_Start(0, DOMAIN, PORT);
 				memset(_buffer, 0, 150);
 				//sprintf(_buffer, "GET /v1/data/read/test/res?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: token_AoCqH6gCmwvFAnls\r\n\r\n");
 				ds3231_read_clock ( &clock ); // 0 = success
 				sprintf(strchr,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
-				Post_f(_buffer,"Tarjetas","tarjeta_1_salida","token_WlqwfZqzycNiPoZK",strchr);
+				Post_f("Tarjetas","tarjeta_1_salida","token_WlqwfZqzycNiPoZK",strchr);
 				ESPXX_Send(_buffer);
 				Read_Data(_buffer);
 				_delay_ms(600);
 				
-				if(soniguales){
+				
 					
 					PORTD |= (1 << 7);
 					prenderled = 1;
@@ -250,8 +297,8 @@ int main()
 					ESPXX_Send(_buffer);
 					_delay_ms(10000);
 					
-				}
 				
+				*/
 				//llamar al esp preguntando las IDs 
 				//comparar
 				//si son iguales mandas horario de apertura 
