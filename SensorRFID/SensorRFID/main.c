@@ -186,13 +186,13 @@ int main()
 				//////////////////////////////////////////////////////////////////////////
 	
 				if(card_match)
-					if(strcmp(strchrs,"aca va la ide de tarjeta")){
+					if(!strcmp(strchrs,"aca va la ide de tarjeta")){
 						#define tarjeta_entrada "tarjeta_1_entrada"
 						#define tarjeta_salida  "tarjeta_1_salida"
 						#define tarjeta_diferencia  "tarjeta_1_diferencia"
 						#define tarjeta_bool  "tarjeta_1_bool"
 					}
-					if(strcmp(strchrs,"aca va la ide de tarjeta")){
+					if(!strcmp(strchrs,"aca va la ide de tarjeta")){
 						#define tarjeta_entrada  "tarjeta_2_entrada"
 						#define tarjeta_salida  "tarjeta_2_salida"
 						#define tarjeta_diferencia  "tarjeta_2_diferencia"
@@ -223,12 +223,14 @@ int main()
 					 }
 					//////////////////////////////////////////////////////////////////////////
 					
-					if(entrando)
+					if(entrando){
 					//////////////////////////////////////////////////////////////////////////
 					///registra el tiempo y lo envia a tiempo de entrada
 					Get_f(channel,tarjeta_entrada,token);
 					//_buffer = extract_data(RESPONSE_BUFFER);
 					//ACA MOVEMOS EL VECTOR DE TIEMPO
+					extract_data(RESPONSE_BUFFER, &extracted_data);
+					sprintf(_buffer,"%s",extracted_data);
 					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
 					sprintf(strchrs,",%s",clockstr);
 					strcat(_buffer,strchrs);
@@ -239,13 +241,15 @@ int main()
 					//////////////////////////////////////////////////////////////////////////
 					/// cambia el valor del bool 
 					Post_f(channel,tarjeta_bool,token,"false");
-					
+					}
 					//////////////////////////////////////////////////////////////////////////
-					if(saliendo)
+					if(saliendo){
 					//////////////////////////////////////////////////////////////////////////
 					///registra el tiempo 
 					Get_f(channel,tarjeta_salida,token);
 					//_buffer = extract_data(RESPONSE_BUFFER);
+					extract_data(RESPONSE_BUFFER, &extracted_data);
+					sprintf(_buffer,"%s",extracted_data);
 					//ACA MOVEMOS EL VECTOR DE TIEMPO
 					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
 					sprintf(strchrs,",%s",clockstr);
@@ -258,7 +262,8 @@ int main()
 					//////////////////////////////////////////////////////////////////////////
 					///resta los tiempos
 					Get_f(channel,tarjeta_entrada,token);
-					strcpy(_buffer,extract_data(RESPONSE_BUFFER)); 
+					extract_data(RESPONSE_BUFFER, &extracted_data);
+					sprintf(_buffer,"%s",extracted_data);
 					memmove(_buffer,_buffer + (17*4),strlen(_buffer) - (17*4)+1);
 					//ds3231_clock_t duration = time_diff(clock,_buffer);	
 					//sprintf(_buffer,"%d/%d/%d %d:%d:%d",duration.date,duration.month,duration.year,duration.hours,duration.minutes,duration.seconds);
@@ -269,51 +274,11 @@ int main()
 					Post_f(channel,tarjeta_bool,token,"false");
 					
 					//////////////////////////////////////////////////////////////////////////			
-					
-								/*		
-				ESPXX_Start(0, DOMAIN, PORT);
-				memset(_buffer, 0, 150);
-				//sprintf(_buffer, "GET /v1/data/read/test/res?limit=1 HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: token_AoCqH6gCmwvFAnls\r\n\r\n");
-				ds3231_read_clock ( &clock ); // 0 = success
-				sprintf(strchr,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
-				Post_f("Tarjetas","tarjeta_1_salida","token_WlqwfZqzycNiPoZK",strchr);
-				ESPXX_Send(_buffer);
-				Read_Data(_buffer);
-				_delay_ms(600);
+					}
+			
 				
 				
-					
-					PORTD |= (1 << 7);
-					prenderled = 1;
-					TCNT1 = (65535 - (16000000/1024)*50);
-					
-					byte = ds3231_read_clock ( &clock ); // 0 = success
-					sprintf(strchr,"Clock = %d/%d/%d %d:%d:%d \r\n",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
-					USART_putstring(strchr);
-					byte = ds3231_read_clock ( &clock ); // 0 = success
-					sprintf(strchr,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
-					memset(_buffer, 0, 350);
-					sprintf(_buffer, "POST /v1/data/write/test/res HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: token_AoCqH6gCmwvFAnls\r\nContent-length: 12\r\n\r\n{\"data\": %s}",strchr);
-					ESPXX_Send(_buffer);
-					_delay_ms(10000);
-					
-				
-				*/
-				//llamar al esp preguntando las IDs 
-				//comparar
-				//si son iguales mandas horario de apertura 
-				//abrir el rele y subir el clock 
-				
-				//ID
-				//adentro ?? 
-				//horario de entrada
-				//horario de salida 
-				//string = { " "," "}  
-				
-				
-				byte = ds3231_read_clock ( &clock ); // 0 = success
-				sprintf(strchr,"Clock = %d/%d/%d %d:%d:%d \r\n",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
-				USART_putstring(strchr);
+
 			}
 			_delay_ms(2000);
 		}
