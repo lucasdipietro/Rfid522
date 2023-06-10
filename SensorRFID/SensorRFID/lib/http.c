@@ -52,6 +52,8 @@
 #include <i2c.h>
 #include <interrupt.h>
 #include <stdbool.h>
+#include <ds3231.h>
+#include <stdlib.h>
 
 enum ESP8266_RESPONSE_STATUS{
 	ESP8266_RESPONSE_WAITING,
@@ -328,15 +330,17 @@ ISR (USART_RX_vect)
 	}
 	SREG = oldsrg;
 }
-void extract_data(const char* packet, char** extracted_data) {
+char* extract_data(const char* packet) {
 	const char* start = strstr(packet, "data") + strlen("data") + 2;
 	const char* end = strstr(packet, "wts") - 2;
-
+	
 	int len = end - start;
-
-	*extracted_data = malloc(len + 1);
-	strncpy(*extracted_data, start, len);
-	(*extracted_data)[len] = '\0';
+	
+	char* data = malloc(len + 1);
+	strncpy(data, start, len);
+	data[len] = '\0';
+	
+	return data;
 }
 void Post_f(char * channel, char * resource, char * token, char * data) {
 	ESPXX_Start(0, DOMAIN, PORT);
@@ -348,7 +352,7 @@ void Post_f(char * channel, char * resource, char * token, char * data) {
 	strcat(paquete," HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nHost: api.beebotte.com\r\nX-Auth-Token: ");
 	strcat(paquete,token);
 	strcat(paquete,"\r\nContent-length: ");
-	sprintf(longi,"%ld",strlen(data));
+	sprintf(longi,"%u",strlen(data));
 	strcat(paquete,longi);
 	strcat(paquete,"\r\n\r\n{\"data\": ");
 		strcat(paquete,data);
@@ -368,26 +372,25 @@ void Get_f(char * channel, char * resource, char * token){
 	ESPXX_Send(paquete);
 	return;
 }
-/*
-ds3231_to_str(ds3231_clock_t clock, char * clock_string){
-	sprintf(clock_string, "%d/%d/%d %d:%d:%d", clock.day, clock.month, clock.year, clock.hours, clock.minutes, clock.seconds);
-	return;
-}
 
-ds3231_clock_t time_diff(ds3231_clock_t clock1, char * clock2){
-	struct ds3231_clock_t duration;
-	uint32_t time1 = clock1.hours * 3600 + clock1.minutes * 60 + clock1.seconds;
-	uint32_t clock2_dia, clock2_mes, clock2_anio, clock2_hora, clock2_minuto, clock2_segundo;
-	sscanf(clock2, "%d/%d/%d %d:%d:%d", &clock2_dia, &clock2_mes, &clock2_anio, &clock2_hora, &clock2_minuto, &clock2_segundo);
-	uint32_t time2 = clock2_hora * 3600 + clock2_minuto * 60 + clock2_segundo;
-	int32_t diff = time2 - time1;
-	uint8_t hours = diff / 3600;
-	diff -= hours * 3600;
-	uint8_t minutes = diff / 60;
-	uint8_t seconds = diff % 60;
-	duration.hours = hours;
-	duration.minutes = minutes;
-	duration.seconds = seconds;
-	return duration;
+
+
+void time_diff(struct ds3231_clock_t * clock1, char * clock2){
+  //struct ds3231_clock_t duration = clock1;
+  uint8_t time1 = (*clock1).hours * 3600 + (*clock1).minutes * 60 + (*clock1).seconds;
+  uint8_t clock2_dia, clock2_mes, clock2_anio, clock2_hours, clock2_minuto, clock2_segundo;
+  sscanf(clock2, "%u/%u/%u %u:%u:%u", &clock2_dia, &clock2_mes, &clock2_anio, &clock2_hours, &clock2_minuto, &clock2_segundo);
+  uint8_t time2 = clock2_hours * 3600 + clock2_minuto * 60 + clock2_segundo;
+  uint8_t diff = time2 - time1;
+  uint8_t hours = diff / 3600;
+  diff -= hours * 3600;
+  uint8_t minutes = diff / 60;
+  uint8_t seconds = diff % 60;
+  /*duration.hours = hours;
+  duration.minutes = minutes;
+  duration.seconds = seconds;*/
+  (*clock1).hours = hours;
+  (*clock1).minutes = minutes;
+  (*clock1).seconds = seconds;
+  //return /*duration*/;
 }
-*/

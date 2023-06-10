@@ -21,6 +21,7 @@
 #include <interrupt.h>
 #include <stdbool.h>
 #include <http.h>
+#include <stdlib.h>
 
 #define TIMER_LEN 128
 uint8_t SelfTestBuffer[64];
@@ -32,7 +33,7 @@ uint8_t prenderled =0;
 
 
 #define SSID				"Fibertel WiFi056 2.4GHz"
-#define PASSWORD			"0161833386"
+#define PASSWORD			"0141833386"
 //#define SSID				"Barcala"
 //#define PASSWORD			"barcala2023"
 #define channel "Tarjetas"
@@ -83,12 +84,14 @@ int main()
 	char ID[MAX_LEN];
 	char TIME[TIMER_LEN];
 	char strchrs[128];
+	char cardchrs[128];
 	char clockstr[100];
 	char strc;
 	char * strcp;
 	uint8_t card_match = 0;
 	struct ds3231_clock_t clock = { 0 };
-		char* extracted_data = NULL;
+		struct ds3231_clock_t duration = {0}; 
+		char* extracted_data ;
 		uint8_t entrando;
 		uint8_t saliendo;
 	
@@ -167,8 +170,8 @@ int main()
 				//////////////////////////////////////////////////////////////////////////
 				///Aca detecta la tarjeta
 				byte = mfrc522_get_card_serial(str);
-				//USART_putstring("CARD DETECTED\r\n");
-				sprintf(strchrs,"%x:%x:%x:%x",str[0],str[1],str[2],str[3]);
+				USART_putstring("CARD DETECTED\r\n");
+				sprintf(cardchrs,"%x:%x:%x:%x",str[0],str[1],str[2],str[3]);
 				//USART_putstring(strchr);
 				//////////////////////////////////////////////////////////////////////////
 				ds3231_read_clock ( &clock ); // 0 = success
@@ -176,15 +179,16 @@ int main()
 				
 				//////////////////////////////////////////////////////////////////////////
 				///Aca hace el GET a la ID 
-				Get_f(channel,strchrs,token);
+				 Get_f(channel,strchrs,token);
 				//Read_Data(_buffer); //aca hay q ver q hacemo 
-				 extract_data(RESPONSE_BUFFER, &extracted_data);
+				 extracted_data = extract_data(RESPONSE_BUFFER);
 				 sprintf(strchrs,"%s",extracted_data);
 				 if(!strcmp(strchrs,"true")){
 					 card_match = 1;
 				 }
+				 free(extracted_data);
 				//////////////////////////////////////////////////////////////////////////
-	
+				
 				if(card_match)
 					if(!strcmp(strchrs,"aca va la ide de tarjeta")){
 						#define tarjeta_entrada "tarjeta_1_entrada"
@@ -210,17 +214,19 @@ int main()
 					///GET para saber si esta adentro o afuera 
 					Get_f(channel,tarjeta_bool,token);
 					//uint8_t entrando = strcmp(extract_data(RESPONSE_BUFFER),"true");
-					 extract_data(RESPONSE_BUFFER, &extracted_data);
-					sprintf(strchrs,"%s",extracted_data);
-					if(!strcmp(strchrs,"true")){
-						entrando = 1;
-					}
+					 extracted_data = extract_data(RESPONSE_BUFFER);
+					 sprintf(strchrs,"%s",extracted_data);
+					 if(!strcmp(strchrs,"true")){
+						 entrando = 1;
+					 }
+					 free(extracted_data);
 					//bool saliendo = strcmp(extract_data(RESPONSE_BUFFER),"false");
-					 extract_data(RESPONSE_BUFFER, &extracted_data);
+					 extracted_data = extract_data(RESPONSE_BUFFER);
 					 sprintf(strchrs,"%s",extracted_data);
 					 if(!strcmp(strchrs,"false")){
 						 saliendo = 1;
 					 }
+					 free(extracted_data);
 					//////////////////////////////////////////////////////////////////////////
 					
 					if(entrando){
@@ -229,7 +235,9 @@ int main()
 					Get_f(channel,tarjeta_entrada,token);
 					//_buffer = extract_data(RESPONSE_BUFFER);
 					//ACA MOVEMOS EL VECTOR DE TIEMPO
-					extract_data(RESPONSE_BUFFER, &extracted_data);
+					
+					
+					extracted_data = extract_data(RESPONSE_BUFFER);
 					sprintf(_buffer,"%s",extracted_data);
 					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
 					sprintf(strchrs,",%s",clockstr);
@@ -237,6 +245,7 @@ int main()
 					//ACA LO PUSHEAMOS 
 					Post_f(channel,tarjeta_entrada,token,_buffer);
 					//////////////////////////////////////////////////////////////////////////
+					free(extracted_data);
 					
 					//////////////////////////////////////////////////////////////////////////
 					/// cambia el valor del bool 
@@ -248,7 +257,7 @@ int main()
 					///registra el tiempo 
 					Get_f(channel,tarjeta_salida,token);
 					//_buffer = extract_data(RESPONSE_BUFFER);
-					extract_data(RESPONSE_BUFFER, &extracted_data);
+					extracted_data = extract_data(RESPONSE_BUFFER);
 					sprintf(_buffer,"%s",extracted_data);
 					//ACA MOVEMOS EL VECTOR DE TIEMPO
 					memmove(_buffer, _buffer + 17, strlen(_buffer) - 17 + 1);
@@ -256,19 +265,20 @@ int main()
 					strcat(_buffer,strchrs);
 					//ACA LO PUSHEAMOS
 					Post_f(channel,tarjeta_salida,token,_buffer);
-					
+					free(extracted_data);
 					//////////////////////////////////////////////////////////////////////////
 					
 					//////////////////////////////////////////////////////////////////////////
 					///resta los tiempos
 					Get_f(channel,tarjeta_entrada,token);
-					extract_data(RESPONSE_BUFFER, &extracted_data);
+					extracted_data = extract_data(RESPONSE_BUFFER);
 					sprintf(_buffer,"%s",extracted_data);
 					memmove(_buffer,_buffer + (17*4),strlen(_buffer) - (17*4)+1);
-					//ds3231_clock_t duration = time_diff(clock,_buffer);	
-					//sprintf(_buffer,"%d/%d/%d %d:%d:%d",duration.date,duration.month,duration.year,duration.hours,duration.minutes,duration.seconds);
-					//////////////////////////////////////////////////////////////////////////
 					
+					time_diff(clock,_buffer);	
+					sprintf(_buffer,"%d/%d/%d %d:%d:%d",clock.date,clock.month,clock.year,clock.hours,clock.minutes,clock.seconds);
+					//////////////////////////////////////////////////////////////////////////
+					free(extracted_data);
 					//////////////////////////////////////////////////////////////////////////
 					///cambia el bool
 					Post_f(channel,tarjeta_bool,token,"false");
